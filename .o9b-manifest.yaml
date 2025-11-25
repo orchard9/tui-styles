@@ -1,0 +1,28 @@
+o9b_version: 1.0.0
+project_name: TUI Styles
+project_slug: tui-styles
+created: 2025-11-23T12:05:57.235421-07:00
+last_updated: 2025-11-23T12:12:12.393492-07:00
+components:
+    cli:
+        installed: true
+        version: 1.0.0
+    docs:
+        CLAUDE.md:
+            installed: true
+            version: 1.0.0
+        CODING_GUIDELINES.md:
+            installed: true
+            version: 1.0.0
+        DESIGN_SYSTEM.md:
+            installed: true
+            version: 1.0.0
+    claude:
+        installed: true
+        version: 1.0.0
+    quality_configs:
+        installed: true
+        version: 1.0.0
+    reference_code:
+        installed: true
+        version: 1.0.0

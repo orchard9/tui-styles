@@ -1,0 +1,1073 @@
+openapi: 3.0.3
+info:
+  title: Masquerade Creator API
+  version: 0.1.0
+  description: |
+    API for Masquerade Creator Studio - avatar creation, management, and analytics.
+
+    **Current Status**: Mock endpoints only (no database integration)
+
+    **Base URL**: `http://localhost:34075` (development)
+
+    ## Features
+    - Creator signup with 14-day trial period
+    - Avatar upload and processing pipeline
+    - Real-time dashboard analytics
+    - Earnings tracking and payout history
+
+    ## Authentication
+    Authentication placeholders are included for future JWT implementation (Milestone 4).
+    Currently, all endpoints return mock data without authentication.
+
+  contact:
+    name: Masquerade Engineering
+    email: api@masquerade.ai
+
+servers:
+  - url: http://localhost:34075
+    description: Local development
+  - url: https://api-staging.masquerade.ai
+    description: Staging (coming soon)
+  - url: https://api.masquerade.ai
+    description: Production (coming soon)
+
+tags:
+  - name: Health
+    description: Service health and monitoring endpoints
+  - name: Creators
+    description: Creator account management and signup
+  - name: Avatars
+    description: Avatar upload, processing, and retrieval
+  - name: Analytics
+    description: Dashboard metrics and earnings data
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: |
+        Returns service health status and version information.
+        Used by Kubernetes/Docker for liveness and readiness probes.
+      tags:
+        - Health
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: healthy
+                version: 0.1.0
+                timestamp: '2025-11-19T10:30:00Z'
+                service: creator-api
+
+  /api/v1/ping:
+    get:
+      summary: Ping endpoint
+      description: Simple test endpoint to verify API is responding
+      tags:
+        - Health
+      operationId: ping
+      responses:
+        '200':
+          description: Pong response with timestamp
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingResponse'
+              example:
+                message: pong
+                timestamp: '2025-11-19T10:30:00Z'
+                version: v1
+
+  /api/v1/creators/signup:
+    post:
+      summary: Creator signup
+      description: |
+        Register a new creator account with a 14-day trial period.
+        Returns creator ID and onboarding steps.
+
+        **Trial Period**: 14 days from signup
+        **Next Steps**: Identity verification, avatar creation, marketplace publishing
+      tags:
+        - Creators
+      operationId: creatorSignup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            example:
+              creator_name: Jane Doe
+              email: jane@example.com
+              portfolio: https://artstation.com/janedoe
+      responses:
+        '201':
+          description: Creator account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+              example:
+                creator_id: 550e8400-e29b-41d4-a716-446655440000
+                message: Welcome to Masquerade Creator Studio, Jane Doe!
+                trial_ends_at: '2025-12-03T10:30:00Z'
+                status: trial
+                next_steps:
+                  - Complete identity verification
+                  - Create your first avatar
+                  - Publish to marketplace
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/avatars/upload:
+    post:
+      summary: Upload avatar
+      description: |
+        Initiate avatar upload and processing workflow.
+        Returns upload ID and processing stages.
+
+        **Processing Pipeline**:
+        1. Face detection
+        2. 3D reconstruction
+        3. Texture generation
+        4. Expression rigging
+        5. Quality verification
+
+        **Estimated Time**: 10 minutes
+      tags:
+        - Avatars
+      operationId: uploadAvatar
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadRequest'
+            example:
+              creator_id: creator_123
+              avatar_name: Cyber Warrior
+              photo_count: 25
+      responses:
+        '202':
+          description: Upload accepted, processing started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+              example:
+                upload_id: upload_1732014600
+                avatar_id: avatar_a1b2c3d4
+                status: processing
+                message: Avatar upload started successfully
+                estimated_completion: '2025-11-19T10:40:00Z'
+                processing_stages:
+                  - stage: face_detection
+                    status: queued
+                  - stage: 3d_reconstruction
+                    status: queued
+                  - stage: texture_generation
+                    status: queued
+                  - stage: expression_rigging
+                    status: queued
+                  - stage: quality_verification
+                    status: queued
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/avatars/{id}:
+    get:
+      summary: Get avatar details
+      description: |
+        Retrieve avatar metadata, status, and marketplace information.
+
+        **Avatar Status**:
+        - `draft`: Initial creation, not yet submitted
+        - `processing`: AI pipeline in progress
+        - `review`: Awaiting human review (24-48h SLA)
+        - `published`: Live on marketplace
+        - `rejected`: Failed quality checks
+      tags:
+        - Avatars
+      operationId: getAvatar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Avatar ID
+          schema:
+            type: string
+            example: avatar_a1b2c3
+      responses:
+        '200':
+          description: Avatar data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarResponse'
+              example:
+                avatar_id: avatar_a1b2c3
+                creator_id: creator_123
+                name: Cyber Warrior
+                status: published
+                quality_score: 8.7
+                created_at: '2025-11-15T08:30:00Z'
+                published_at: '2025-11-17T14:20:00Z'
+                category: sci-fi
+                tags:
+                  - cyborg
+                  - futuristic
+                  - masculine
+                price: 12.99
+                sales_count: 47
+                rating: 4.6
+                review_count: 12
+                preview_images:
+                  - https://cdn.masquerade.ai/avatars/avatar_a1b2c3/preview_front.jpg
+                  - https://cdn.masquerade.ai/avatars/avatar_a1b2c3/preview_side.jpg
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/creators/{id}/dashboard:
+    get:
+      summary: Creator dashboard
+      description: |
+        Get comprehensive analytics and metrics for a creator.
+
+        **Metrics Included**:
+        - Earnings (total, change %)
+        - Sales volume (total, change %)
+        - Marketplace views (total, change %)
+        - Active avatars count
+        - Pending review count
+        - Average rating
+        - Conversion rate
+
+        **Period**: Current default is 'month', configurable in future releases
+      tags:
+        - Analytics
+      operationId: getCreatorDashboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Creator ID
+          schema:
+            type: string
+            example: creator_123
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardResponse'
+              example:
+                creator_id: creator_123
+                period: month
+                metrics:
+                  total_earnings: 3247.85
+                  earnings_change: 8.3
+                  total_sales: 257
+                  sales_change: 12.5
+                  marketplace_views: 5432
+                  views_change: 11.2
+                  active_avatars: 23
+                  pending_review: 2
+                  average_rating: 4.7
+                  conversion_rate: 6.3
+                top_avatars:
+                  - avatar_id: avatar_001
+                    name: Cyber Warrior
+                    sales: 52
+                    revenue: 674.48
+                    rating: 4.6
+                  - avatar_id: avatar_002
+                    name: Mystic Elf
+                    sales: 41
+                    revenue: 614.59
+                    rating: 4.8
+                  - avatar_id: avatar_003
+                    name: Dragon Slayer
+                    sales: 34
+                    revenue: 441.66
+                    rating: 4.5
+                recent_activity:
+                  - type: sale
+                    avatar_name: Cyber Warrior
+                    amount: 11.04
+                    timestamp: '2025-11-19T08:30:00Z'
+                  - type: review
+                    avatar_name: Mystic Elf
+                    rating: 5
+                    timestamp: '2025-11-19T06:30:00Z'
+                  - type: sale
+                    avatar_name: Dragon Slayer
+                    amount: 8.49
+                    timestamp: '2025-11-19T04:30:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/creators/{id}/earnings:
+    get:
+      summary: Creator earnings
+      description: |
+        Get earnings breakdown and payout history for a creator.
+
+        **Revenue Share**: Creators earn 85% of avatar sales (15% platform fee)
+
+        **Payout Schedule**: Monthly on the 7th
+        **Minimum Payout**: $50.00
+        **Pending Period**: 14 days from sale
+
+        **Earnings Sources**:
+        - Avatar sales (primary)
+        - Referral bonuses
+        - Contest prizes
+        - Platform bonuses
+      tags:
+        - Analytics
+      operationId: getCreatorEarnings
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Creator ID
+          schema:
+            type: string
+            example: creator_123
+      responses:
+        '200':
+          description: Earnings data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EarningsResponse'
+              example:
+                creator_id: creator_123
+                balance:
+                  available: 547.32
+                  pending: 123.45
+                  pending_available_date: '2025-12-03T00:00:00Z'
+                  lifetime_total: 8976.54
+                breakdown:
+                  avatar_sales: 8527.71
+                  referral_bonuses: 269.30
+                  contest_prizes: 179.53
+                  platform_bonuses: 0.00
+                payout_history:
+                  - payout_id: payout_001
+                    amount: 1387.62
+                    status: completed
+                    method: paypal
+                    requested_at: '2025-11-01T00:00:00Z'
+                    completed_at: '2025-11-05T12:30:00Z'
+                  - payout_id: payout_002
+                    amount: 1052.18
+                    status: completed
+                    method: bank_transfer
+                    requested_at: '2025-10-01T00:00:00Z'
+                    completed_at: '2025-10-04T10:15:00Z'
+                  - payout_id: payout_003
+                    amount: 843.75
+                    status: completed
+                    method: paypal
+                    requested_at: '2025-09-01T00:00:00Z'
+                    completed_at: '2025-09-03T14:45:00Z'
+                next_payout_date: '2025-12-07T00:00:00Z'
+                minimum_payout: 50.00
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT authentication (coming in Milestone 4).
+        Currently, authentication is not enforced - all endpoints return mock data.
+
+  schemas:
+    # Health schemas
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+        - timestamp
+        - service
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+          description: Service health status
+          example: healthy
+        version:
+          type: string
+          description: API version
+          example: 0.1.0
+        timestamp:
+          type: string
+          format: date-time
+          description: Current server time (UTC)
+        service:
+          type: string
+          description: Service name
+          example: creator-api
+
+    PingResponse:
+      type: object
+      required:
+        - message
+        - timestamp
+        - version
+      properties:
+        message:
+          type: string
+          description: Pong message
+          example: pong
+        timestamp:
+          type: string
+          format: date-time
+          description: Server timestamp (RFC3339)
+        version:
+          type: string
+          description: API version
+          example: v1
+
+    # Creator schemas
+    SignupRequest:
+      type: object
+      required:
+        - creator_name
+        - email
+      properties:
+        creator_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: Creator's display name
+          example: Jane Doe
+        email:
+          type: string
+          format: email
+          description: Creator's email address
+          example: jane@example.com
+        portfolio:
+          type: string
+          format: uri
+          description: Optional portfolio URL (ArtStation, Behance, etc.)
+          example: https://artstation.com/janedoe
+
+    SignupResponse:
+      type: object
+      required:
+        - creator_id
+        - message
+        - trial_ends_at
+        - status
+        - next_steps
+      properties:
+        creator_id:
+          type: string
+          format: uuid
+          description: Unique creator identifier
+          example: 550e8400-e29b-41d4-a716-446655440000
+        message:
+          type: string
+          description: Welcome message
+          example: Welcome to Masquerade Creator Studio, Jane Doe!
+        trial_ends_at:
+          type: string
+          format: date-time
+          description: Trial expiration date (14 days from signup)
+        status:
+          type: string
+          enum:
+            - trial
+            - active
+            - suspended
+          description: Account status
+          example: trial
+        next_steps:
+          type: array
+          items:
+            type: string
+          description: Onboarding checklist
+          example:
+            - Complete identity verification
+            - Create your first avatar
+            - Publish to marketplace
+
+    # Avatar schemas
+    UploadRequest:
+      type: object
+      required:
+        - creator_id
+        - avatar_name
+        - photo_count
+      properties:
+        creator_id:
+          type: string
+          description: Creator's unique identifier
+          example: creator_123
+        avatar_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          description: Display name for the avatar
+          example: Cyber Warrior
+        photo_count:
+          type: integer
+          minimum: 15
+          maximum: 50
+          description: Number of reference photos uploaded
+          example: 25
+
+    ProcessingStage:
+      type: object
+      required:
+        - stage
+        - status
+      properties:
+        stage:
+          type: string
+          enum:
+            - face_detection
+            - 3d_reconstruction
+            - texture_generation
+            - expression_rigging
+            - quality_verification
+          description: Processing pipeline stage name
+          example: face_detection
+        status:
+          type: string
+          enum:
+            - queued
+            - processing
+            - completed
+            - failed
+          description: Stage completion status
+          example: queued
+
+    UploadResponse:
+      type: object
+      required:
+        - upload_id
+        - avatar_id
+        - status
+        - message
+        - estimated_completion
+        - processing_stages
+      properties:
+        upload_id:
+          type: string
+          description: Unique upload session identifier
+          example: upload_1732014600
+        avatar_id:
+          type: string
+          description: Generated avatar identifier
+          example: avatar_a1b2c3d4
+        status:
+          type: string
+          enum:
+            - processing
+            - completed
+            - failed
+          description: Overall processing status
+          example: processing
+        message:
+          type: string
+          description: Human-readable status message
+          example: Avatar upload started successfully
+        estimated_completion:
+          type: string
+          format: date-time
+          description: Estimated processing completion time
+        processing_stages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessingStage'
+          description: Detailed pipeline stage status
+
+    AvatarResponse:
+      type: object
+      required:
+        - avatar_id
+        - creator_id
+        - name
+        - status
+        - quality_score
+        - created_at
+        - category
+        - tags
+        - price
+        - sales_count
+        - rating
+        - review_count
+        - preview_images
+      properties:
+        avatar_id:
+          type: string
+          description: Unique avatar identifier
+          example: avatar_a1b2c3
+        creator_id:
+          type: string
+          description: Creator who owns this avatar
+          example: creator_123
+        name:
+          type: string
+          description: Avatar display name
+          example: Cyber Warrior
+        status:
+          type: string
+          enum:
+            - draft
+            - processing
+            - review
+            - published
+            - rejected
+          description: Avatar lifecycle status
+          example: published
+        quality_score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 10
+          description: AI-generated quality score (0-10)
+          example: 8.7
+        created_at:
+          type: string
+          format: date-time
+          description: Avatar creation timestamp
+        published_at:
+          type: string
+          format: date-time
+          description: Marketplace publication timestamp (if published)
+        category:
+          type: string
+          description: Avatar category (sci-fi, fantasy, horror, realistic, etc.)
+          example: sci-fi
+        tags:
+          type: array
+          items:
+            type: string
+          description: Searchable tags
+          example:
+            - cyborg
+            - futuristic
+            - masculine
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: Marketplace price (USD)
+          example: 12.99
+        sales_count:
+          type: integer
+          minimum: 0
+          description: Total number of sales
+          example: 47
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: Average user rating (0-5 stars)
+          example: 4.6
+        review_count:
+          type: integer
+          minimum: 0
+          description: Total number of reviews
+          example: 12
+        preview_images:
+          type: array
+          items:
+            type: string
+            format: uri
+          description: CDN URLs for preview images
+          example:
+            - https://cdn.masquerade.ai/avatars/avatar_a1b2c3/preview_front.jpg
+            - https://cdn.masquerade.ai/avatars/avatar_a1b2c3/preview_side.jpg
+
+    # Analytics schemas
+    DashboardMetrics:
+      type: object
+      required:
+        - total_earnings
+        - earnings_change
+        - total_sales
+        - sales_change
+        - marketplace_views
+        - views_change
+        - active_avatars
+        - pending_review
+        - average_rating
+        - conversion_rate
+      properties:
+        total_earnings:
+          type: number
+          format: float
+          description: Total earnings for the period (USD)
+          example: 3247.85
+        earnings_change:
+          type: number
+          format: float
+          description: Percentage change vs previous period
+          example: 8.3
+        total_sales:
+          type: integer
+          description: Total avatar sales count
+          example: 257
+        sales_change:
+          type: number
+          format: float
+          description: Percentage change vs previous period
+          example: 12.5
+        marketplace_views:
+          type: integer
+          description: Total marketplace views
+          example: 5432
+        views_change:
+          type: number
+          format: float
+          description: Percentage change vs previous period
+          example: 11.2
+        active_avatars:
+          type: integer
+          description: Number of published avatars
+          example: 23
+        pending_review:
+          type: integer
+          description: Avatars awaiting review
+          example: 2
+        average_rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: Average rating across all avatars
+          example: 4.7
+        conversion_rate:
+          type: number
+          format: float
+          description: View-to-sale conversion percentage
+          example: 6.3
+
+    TopAvatar:
+      type: object
+      required:
+        - avatar_id
+        - name
+        - sales
+        - revenue
+        - rating
+      properties:
+        avatar_id:
+          type: string
+          description: Avatar identifier
+          example: avatar_001
+        name:
+          type: string
+          description: Avatar name
+          example: Cyber Warrior
+        sales:
+          type: integer
+          description: Number of sales
+          example: 52
+        revenue:
+          type: number
+          format: float
+          description: Revenue generated (USD)
+          example: 674.48
+        rating:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 5
+          description: Average rating
+          example: 4.6
+
+    RecentActivity:
+      type: object
+      required:
+        - type
+        - avatar_name
+        - timestamp
+      properties:
+        type:
+          type: string
+          enum:
+            - sale
+            - review
+            - milestone
+            - upload
+          description: Activity type
+          example: sale
+        avatar_name:
+          type: string
+          description: Related avatar name
+          example: Cyber Warrior
+        amount:
+          type: number
+          format: float
+          description: Transaction amount (for sales)
+          example: 11.04
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Rating value (for reviews)
+          example: 5
+        timestamp:
+          type: string
+          format: date-time
+          description: Activity timestamp
+
+    DashboardResponse:
+      type: object
+      required:
+        - creator_id
+        - period
+        - metrics
+        - top_avatars
+        - recent_activity
+      properties:
+        creator_id:
+          type: string
+          description: Creator identifier
+          example: creator_123
+        period:
+          type: string
+          enum:
+            - day
+            - week
+            - month
+            - year
+          description: Reporting period
+          example: month
+        metrics:
+          $ref: '#/components/schemas/DashboardMetrics'
+        top_avatars:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopAvatar'
+          description: Best performing avatars (top 3)
+        recent_activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentActivity'
+          description: Recent transactions and events
+
+    Balance:
+      type: object
+      required:
+        - available
+        - pending
+        - pending_available_date
+        - lifetime_total
+      properties:
+        available:
+          type: number
+          format: float
+          description: Available for payout (USD)
+          example: 547.32
+        pending:
+          type: number
+          format: float
+          description: Pending funds (14-day hold)
+          example: 123.45
+        pending_available_date:
+          type: string
+          format: date-time
+          description: Date when pending becomes available
+        lifetime_total:
+          type: number
+          format: float
+          description: Total earnings all-time (USD)
+          example: 8976.54
+
+    EarningsBreakdown:
+      type: object
+      required:
+        - avatar_sales
+        - referral_bonuses
+        - contest_prizes
+        - platform_bonuses
+      properties:
+        avatar_sales:
+          type: number
+          format: float
+          description: Revenue from avatar sales (85% of gross)
+          example: 8527.71
+        referral_bonuses:
+          type: number
+          format: float
+          description: Referral program earnings
+          example: 269.30
+        contest_prizes:
+          type: number
+          format: float
+          description: Contest winnings
+          example: 179.53
+        platform_bonuses:
+          type: number
+          format: float
+          description: Platform incentive bonuses
+          example: 0.00
+
+    PayoutHistory:
+      type: object
+      required:
+        - payout_id
+        - amount
+        - status
+        - method
+        - requested_at
+      properties:
+        payout_id:
+          type: string
+          description: Unique payout identifier
+          example: payout_001
+        amount:
+          type: number
+          format: float
+          description: Payout amount (USD)
+          example: 1387.62
+        status:
+          type: string
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+          description: Payout status
+          example: completed
+        method:
+          type: string
+          enum:
+            - paypal
+            - bank_transfer
+            - stripe
+          description: Payout method
+          example: paypal
+        requested_at:
+          type: string
+          format: date-time
+          description: Payout request timestamp
+        completed_at:
+          type: string
+          format: date-time
+          description: Payout completion timestamp (if completed)
+
+    EarningsResponse:
+      type: object
+      required:
+        - creator_id
+        - balance
+        - breakdown
+        - payout_history
+        - next_payout_date
+        - minimum_payout
+      properties:
+        creator_id:
+          type: string
+          description: Creator identifier
+          example: creator_123
+        balance:
+          $ref: '#/components/schemas/Balance'
+        breakdown:
+          $ref: '#/components/schemas/EarningsBreakdown'
+        payout_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/PayoutHistory'
+          description: Historical payouts (most recent first)
+        next_payout_date:
+          type: string
+          format: date-time
+          description: Next scheduled payout date
+        minimum_payout:
+          type: number
+          format: float
+          description: Minimum balance required for payout (USD)
+          example: 50.00
+
+    # Error schemas
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+          example: bad_request
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid request body
+        request_id:
+          type: string
+          description: Request ID for debugging
+          example: abc-123
+        details:
+          type: object
+          description: Additional error context (validation errors, etc.)
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: bad_request
+            message: Invalid request body
+            request_id: abc-123
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: unauthorized
+            message: Authentication required
+            request_id: abc-123
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: not_found
+            message: Resource not found
+            request_id: abc-123

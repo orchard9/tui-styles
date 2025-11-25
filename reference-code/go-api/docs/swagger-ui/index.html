@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Masquerade Creator API - Interactive API documentation for avatar creation and management">
+    <title>Masquerade Creator API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="./swagger-ui.css" />
+    <link rel="icon" type="image/png" href="./favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="./favicon-16x16.png" sizes="16x16" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .topbar {
+            background-color: #1a1a1a;
+            padding: 10px 0;
+        }
+        .topbar .wrapper {
+            max-width: 1460px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .topbar .topbar-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .topbar .topbar-wrapper .link {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #fff;
+            text-decoration: none;
+        }
+        .topbar .topbar-wrapper .link span {
+            color: #61dafb;
+        }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="./swagger-ui-bundle.js" charset="UTF-8"></script>
+    <script src="./swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: "/docs/openapi.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 1,
+                displayRequestDuration: true,
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                tryItOutEnabled: true,
+                persistAuthorization: true,
+                docExpansion: 'list',
+                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+                validatorUrl: null
+            });
+
+            window.ui = ui;
+
+            // Custom branding
+            setTimeout(function() {
+                const topbar = document.querySelector('.topbar');
+                if (topbar) {
+                    topbar.innerHTML = `
+                        <div class="wrapper">
+                            <div class="topbar-wrapper">
+                                <a class="link" href="/">
+                                    <span>MASQUERADE</span> Creator API
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                }
+            }, 100);
+        };
+    </script>
+</body>
+</html>

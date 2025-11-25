@@ -1,0 +1,18 @@
+# Clippy configuration for TUI Styles
+
+# Deny all clippy warnings
+msrv = "1.70"
+
+# Specific lints to allow
+allow = []
+
+# Specific lints to deny
+deny = [
+    "clippy::all",
+    "clippy::pedantic",
+]
+
+# Lints to warn about
+warn = [
+    "clippy::cargo",
+]

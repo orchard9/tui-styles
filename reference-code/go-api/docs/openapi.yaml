@@ -1,0 +1,766 @@
+openapi: 3.0.3
+info:
+  title: Masquerade Creator API
+  description: |
+    REST API for the Masquerade Creator Studio platform.
+
+    This API enables creators to:
+    - Sign up and manage their creator accounts
+    - Upload and process face avatars
+    - View dashboard analytics and earnings
+    - Manage avatar listings in the marketplace
+
+    All authenticated endpoints require a valid JWT token in the Authorization header.
+  version: 1.0.0
+  contact:
+    name: Masquerade API Support
+    email: api-support@masquerade.ai
+  license:
+    name: Proprietary
+    url: https://masquerade.ai/terms
+
+servers:
+  - url: http://localhost:34075
+    description: Local development server
+  - url: https://api.masquerade.ai
+    description: Production server
+
+tags:
+  - name: Health
+    description: Service health and status endpoints
+  - name: Creators
+    description: Creator account management and signup
+  - name: Avatars
+    description: Avatar upload, processing, and retrieval
+  - name: Analytics
+    description: Creator dashboard and earnings analytics
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns service health status for infrastructure monitoring
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - timestamp
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-11-19T12:00:00Z"
+                  version:
+                    type: string
+                    example: "1.0.0"
+        '503':
+          description: Service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/ping:
+    get:
+      summary: Ping endpoint
+      description: Simple ping/pong test endpoint
+      operationId: ping
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Successful ping
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+                    example: pong
+
+  /api/v1/creators/signup:
+    post:
+      summary: Creator signup
+      description: |
+        Register a new creator account with email and profile information.
+
+        **14-day Free Trial**: New creators get 14 days free access to Creator Studio.
+        After trial, subscription required to continue publishing avatars.
+
+        **Email Verification**: Confirmation email sent to provided address.
+      operationId: creatorSignup
+      tags:
+        - Creators
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatorSignupRequest'
+            examples:
+              basic:
+                summary: Basic creator signup
+                value:
+                  email: "creator@example.com"
+                  password: "securePassword123!"
+                  display_name: "ArtistName"
+                  bio: "Digital avatar creator specializing in fantasy characters"
+      responses:
+        '201':
+          description: Creator account created successfully
+          headers:
+            Location:
+              description: URL to the created creator resource
+              schema:
+                type: string
+                example: /api/v1/creators/550e8400-e29b-41d4-a716-446655440000
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatorSignupResponse'
+        '400':
+          description: Invalid request (validation errors)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+              examples:
+                invalid_email:
+                  summary: Invalid email format
+                  value:
+                    error: "Validation failed"
+                    details:
+                      - field: "email"
+                        message: "must be a valid email address"
+                weak_password:
+                  summary: Weak password
+                  value:
+                    error: "Validation failed"
+                    details:
+                      - field: "password"
+                        message: "must be at least 8 characters with uppercase, lowercase, and numbers"
+        '409':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Email already registered"
+                code: "EMAIL_EXISTS"
+
+  /api/v1/avatars/upload:
+    post:
+      summary: Upload avatar for processing
+      description: |
+        Upload face photos for AI avatar processing.
+
+        **Requirements**:
+        - 5-20 photos minimum for quality results
+        - JPG/PNG format, max 10MB per photo
+        - Clear frontal face shots with varying angles/expressions
+        - No sunglasses, heavy filters, or extreme lighting
+
+        **Processing**:
+        - Content safety check (no NSFW, celebrities, violence)
+        - AI 3D model generation (~10-30 minutes)
+        - Quality verification before marketplace listing
+
+        **SLA**: Processing completed within 24-48 hours
+      operationId: uploadAvatar
+      tags:
+        - Avatars
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photos
+                - name
+              properties:
+                photos:
+                  type: array
+                  minItems: 5
+                  maxItems: 20
+                  items:
+                    type: string
+                    format: binary
+                  description: Array of face photo files
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  example: "Cyber Warrior Avatar"
+                description:
+                  type: string
+                  maxLength: 500
+                  example: "Futuristic warrior with neon accents and cybernetic enhancements"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["cyberpunk", "warrior", "sci-fi"]
+                price:
+                  type: number
+                  format: float
+                  minimum: 0.99
+                  example: 9.99
+                  description: Price in USD (min $0.99)
+      responses:
+        '202':
+          description: Upload accepted, processing started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarUploadResponse'
+        '400':
+          description: Invalid upload (file count, size, format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '413':
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/avatars/{id}:
+    get:
+      summary: Get avatar details
+      description: Retrieve avatar metadata and processing status
+      operationId: getAvatar
+      tags:
+        - Avatars
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Avatar UUID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Avatar found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Avatar'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Avatar not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/creators/{id}/dashboard:
+    get:
+      summary: Creator dashboard analytics
+      description: |
+        Retrieve dashboard analytics for a creator including:
+        - Total avatars published
+        - Total revenue and earnings
+        - Recent sales activity
+        - Avatar performance metrics
+      operationId: getCreatorDashboard
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Creator UUID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d, 1y]
+            default: 30d
+          description: Time period for analytics
+      responses:
+        '200':
+          description: Dashboard data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not authorized to view this creator's dashboard
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Creator not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/v1/creators/{id}/earnings:
+    get:
+      summary: Creator earnings details
+      description: |
+        Retrieve detailed earnings information including:
+        - Total earnings (lifetime and period)
+        - Available balance for payout
+        - Payout history
+        - Transaction breakdown by avatar
+
+        **Revenue Share**: Creators earn 85% of sales, platform takes 15%
+
+        **Payout Schedule**: Monthly on the 1st for previous month's earnings
+      operationId: getCreatorEarnings
+      tags:
+        - Analytics
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Creator UUID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Start date for earnings period
+          example: "2025-10-01"
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: End date for earnings period
+          example: "2025-10-31"
+      responses:
+        '200':
+          description: Earnings data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Earnings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Not authorized to view this creator's earnings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Creator not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+            code: "AUTH_REQUIRED"
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+          example: "Internal server error"
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "INTERNAL_ERROR"
+        details:
+          type: object
+          description: Additional error context
+          additionalProperties: true
+
+    ValidationError:
+      type: object
+      required:
+        - error
+        - details
+      properties:
+        error:
+          type: string
+          example: "Validation failed"
+        details:
+          type: array
+          items:
+            type: object
+            required:
+              - field
+              - message
+            properties:
+              field:
+                type: string
+                example: "email"
+              message:
+                type: string
+                example: "must be a valid email address"
+
+    CreatorSignupRequest:
+      type: object
+      required:
+        - email
+        - password
+        - display_name
+      properties:
+        email:
+          type: string
+          format: email
+          example: "creator@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "securePassword123!"
+          description: Min 8 chars with uppercase, lowercase, and numbers
+        display_name:
+          type: string
+          minLength: 2
+          maxLength: 50
+          example: "ArtistName"
+        bio:
+          type: string
+          maxLength: 500
+          example: "Digital avatar creator specializing in fantasy characters"
+        website:
+          type: string
+          format: uri
+          example: "https://myportfolio.com"
+        social_links:
+          type: object
+          properties:
+            twitter:
+              type: string
+              example: "@artistname"
+            instagram:
+              type: string
+              example: "@artistname"
+            tiktok:
+              type: string
+              example: "@artistname"
+
+    CreatorSignupResponse:
+      type: object
+      required:
+        - id
+        - email
+        - display_name
+        - trial_ends_at
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "creator@example.com"
+        display_name:
+          type: string
+          example: "ArtistName"
+        trial_ends_at:
+          type: string
+          format: date-time
+          example: "2025-12-03T00:00:00Z"
+          description: End of 14-day free trial
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-11-19T12:00:00Z"
+        email_verified:
+          type: boolean
+          example: false
+
+    AvatarUploadResponse:
+      type: object
+      required:
+        - id
+        - status
+        - uploaded_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum: [uploading, processing, reviewing, approved, rejected]
+          example: "processing"
+        uploaded_at:
+          type: string
+          format: date-time
+          example: "2025-11-19T12:00:00Z"
+        estimated_completion:
+          type: string
+          format: date-time
+          example: "2025-11-19T12:30:00Z"
+          description: Estimated processing completion time
+
+    Avatar:
+      type: object
+      required:
+        - id
+        - creator_id
+        - name
+        - status
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        creator_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        name:
+          type: string
+          example: "Cyber Warrior Avatar"
+        description:
+          type: string
+          example: "Futuristic warrior with neon accents"
+        status:
+          type: string
+          enum: [uploading, processing, reviewing, approved, rejected, published]
+          example: "published"
+        price:
+          type: number
+          format: float
+          example: 9.99
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["cyberpunk", "warrior", "sci-fi"]
+        thumbnail_url:
+          type: string
+          format: uri
+          example: "https://cdn.masquerade.ai/avatars/550e8400/thumb.jpg"
+        model_url:
+          type: string
+          format: uri
+          example: "https://cdn.masquerade.ai/avatars/550e8400/model.glb"
+          description: 3D model file (only visible to owner/purchasers)
+        total_sales:
+          type: integer
+          example: 42
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-11-19T12:00:00Z"
+        published_at:
+          type: string
+          format: date-time
+          example: "2025-11-19T14:00:00Z"
+
+    Dashboard:
+      type: object
+      required:
+        - total_avatars
+        - total_revenue
+        - total_earnings
+      properties:
+        total_avatars:
+          type: integer
+          example: 15
+          description: Total avatars published
+        total_revenue:
+          type: number
+          format: float
+          example: 1249.50
+          description: Gross revenue from all sales
+        total_earnings:
+          type: number
+          format: float
+          example: 1062.08
+          description: Creator earnings (85% of revenue)
+        period_revenue:
+          type: number
+          format: float
+          example: 349.50
+          description: Revenue for selected period
+        period_earnings:
+          type: number
+          format: float
+          example: 297.08
+          description: Earnings for selected period
+        total_sales:
+          type: integer
+          example: 87
+          description: Total number of avatar sales
+        top_avatars:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - name
+              - sales
+              - revenue
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              sales:
+                type: integer
+              revenue:
+                type: number
+                format: float
+          example:
+            - id: "550e8400-e29b-41d4-a716-446655440000"
+              name: "Cyber Warrior"
+              sales: 42
+              revenue: 419.58
+
+    Earnings:
+      type: object
+      required:
+        - total_earnings
+        - available_balance
+        - pending_balance
+      properties:
+        total_earnings:
+          type: number
+          format: float
+          example: 1062.08
+          description: Lifetime earnings (85% share)
+        available_balance:
+          type: number
+          format: float
+          example: 250.00
+          description: Available for payout
+        pending_balance:
+          type: number
+          format: float
+          example: 47.08
+          description: Pending clearance (30-day hold)
+        next_payout_date:
+          type: string
+          format: date
+          example: "2025-12-01"
+        payouts:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - amount
+              - status
+              - created_at
+            properties:
+              id:
+                type: string
+                format: uuid
+              amount:
+                type: number
+                format: float
+              status:
+                type: string
+                enum: [pending, processing, completed, failed]
+              created_at:
+                type: string
+                format: date-time
+              completed_at:
+                type: string
+                format: date-time
+          example:
+            - id: "650e8400-e29b-41d4-a716-446655440000"
+              amount: 765.00
+              status: "completed"
+              created_at: "2025-11-01T00:00:00Z"
+              completed_at: "2025-11-03T14:23:00Z"
+        transactions:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - avatar_id
+              - amount
+              - creator_share
+              - timestamp
+            properties:
+              id:
+                type: string
+                format: uuid
+              avatar_id:
+                type: string
+                format: uuid
+              avatar_name:
+                type: string
+              amount:
+                type: number
+                format: float
+                description: Sale price
+              creator_share:
+                type: number
+                format: float
+                description: Your 85% share
+              timestamp:
+                type: string
+                format: date-time
