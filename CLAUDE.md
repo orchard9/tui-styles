@@ -393,6 +393,10 @@ See `reference-code/README.md` for detailed usage guidance.
 -   Use semantic commit messages (feat:, fix:, docs:, refactor:, test:, perf:)
 -   Small, focused commits with clear descriptions
 
+**CI/CD**:
+
+-   Never use GitHub Actions - they are brittle and unreliable
+
 ## Where to Find Help
 
 **Protocol & Architecture**:
